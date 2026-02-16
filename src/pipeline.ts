@@ -33,6 +33,7 @@ import { lightningShader } from "./shaders";
 import { lampMaterial } from "./materials/lamp";
 import { lightningShaderInstanced } from "./shaders/lighting";
 import { ProcSkyPass } from "./renderPasses/ProcSkyPass";
+import { GlitchPass } from "./renderPasses/GlitchPass";
 
 export const setupPipeline = async (game: GameState) => {
   const depthStencilTexture = setupDepthStencilTexture();
@@ -95,6 +96,10 @@ export const setupPipeline = async (game: GameState) => {
   const bloomPass = new BloomPass(0.1, 0.005);
   // composer.addPass(bloomPass);
   // composer.addPass(new DebugPass(lightBuffer.textures[0]));
+
+  const glitchPass = new GlitchPass()
+  composer.addPass(glitchPass);
+
   composer.addPass(new ShaderPass(ACESFilmicToneMappingShader));
 
   composer.passes.forEach((pass) =>
