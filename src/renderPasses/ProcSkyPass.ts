@@ -12,12 +12,10 @@ export class ProcSkyPass extends RenderPass {
 
   constructor(
     gBuffer: THREE.WebGLRenderTarget,
-    envMap: THREE.CubeTexture,
     camera: THREE.PerspectiveCamera
   ) {
     super("SkyPass");
     this.gBuffer = gBuffer;
-    skyShader.uniforms.envMap.value = envMap;
     this.camera = camera;
     this.exposure = 0.1;
     this.gamma = 2.2;

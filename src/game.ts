@@ -60,7 +60,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
   const audio = new AudioManager();
   gameState.audio = audio;
   audio.load('./Assembly.mp3').then(() => {
-    // audio.play().catch(err => console.error('Failed to play audio:', err));
+    audio.play().catch(err => console.error('Failed to play audio:', err));
   }).catch(err => {
     console.error('Failed to load audio:', err);
   });

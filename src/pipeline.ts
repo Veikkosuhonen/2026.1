@@ -39,10 +39,6 @@ export const setupPipeline = async (game: GameState) => {
   const gBuffer = setupGBuffer(depthStencilTexture);
   const lightBuffer = setupLightBuffer(depthStencilTexture);
   const textBuffer = setupTextBuffer();
-  const equirect = await loadEquirect(game);
-  const cubeMap = equirectToCube(game.renderer, equirect, 1024);
-  const irradianceMap = cubeToIrradiance(game.renderer, cubeMap.texture, 256);
-  const prefilteredMap = equirectToPrefilter(game.renderer, equirect);
   const brdfLUT = generateBrdfLUT(game.renderer);
 
   const composer = setupComposer(game.renderer, depthStencilTexture);
@@ -71,8 +67,6 @@ export const setupPipeline = async (game: GameState) => {
     gBuffer,
     lightBuffer,
     ssaoPass.ssaoBuffer.texture,
-    irradianceMap.texture,
-    prefilteredMap.texture,
     brdfLUT,
   )
   composer.addPass(iblPass);
@@ -81,7 +75,7 @@ export const setupPipeline = async (game: GameState) => {
     new TexturePass("IBL Diffuse output", lightBuffer.textures[0]),
   );
 
-  composer.addPass(new ProcSkyPass(gBuffer, cubeMap.texture, game.mainCamera));
+  composer.addPass(new ProcSkyPass(gBuffer, game.mainCamera));
 
   const ssrPass = new SSRPass(
     gBuffer,
@@ -209,17 +203,4 @@ const setupComposer = (
   );
   const composer = new EffectComposer(renderer, rt);
   return composer;
-};
-
-const loadEquirect = async (game: GameState) => {
-  const texture = await new Promise<THREE.Texture>((resolve) =>
-    new RGBELoader(game.loadingManager).load(
-      "belfast_sunset_puresky_2k.hdr",
-      (texture) => {
-        resolve(texture);
-      },
-    ),
-  );
-
-  return texture;
 };

@@ -17,8 +17,6 @@ export class IBLPass extends RenderPass {
     gBuffer: THREE.WebGLRenderTarget,
     lightBuffer: THREE.WebGLRenderTarget,
     ssaoTexture: THREE.Texture, 
-    irradianceMap: THREE.Texture,
-    prefilteredMap: THREE.Texture,
     brdfLUT: THREE.Texture,
   ) {
     super("IBLPass");
@@ -33,8 +31,6 @@ export class IBLPass extends RenderPass {
     iblShader.uniforms.gPositionMetalness.value = this.gBuffer.textures[2];
     iblShader.uniforms.ssaoTexture.value = ssaoTexture;
     iblShader.uniforms.gEmission.value = this.gBuffer.textures[3];
-    iblShader.uniforms.irradianceMap.value = irradianceMap;
-    iblShader.uniforms.prefilterMap.value = prefilteredMap;
     iblShader.uniforms.brdfLUT.value = brdfLUT;
   }
 
