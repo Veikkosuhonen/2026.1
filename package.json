@@ -1,0 +1,36 @@
+{
+  "name": "three-deferred-rp",
+  "version": "0.0.1",
+  "author": {
+    "name": "Veikkosuhonen"
+  },
+  "type": "module",
+  "homepage": "https://Veikkosuhonen.github.io/three-deferred-rp/",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "predeploy": "bun run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d": "^0.14.0",
+    "@tauri-apps/plugin-process": "~2",
+    "@theatre/core": "^0.7.2",
+    "@theatre/studio": "^0.7.2",
+    "parameter-flow": "https://github.com/felixbade/parameter-flow.git",
+    "three": "^0.169.0",
+    "troika-three-text": "^0.52.4",
+    "vite-plugin-top-level-await": "^1.4.4",
+    "vite-plugin-wasm": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.7.1",
+    "@types/three": "^0.169.0",
+    "gh-pages": "^6.2.0"
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "src/libs/parameter-flow"]
+	path = src/libs/parameter-flow
+	url = https://github.com/felixbade/parameter-flow.git
