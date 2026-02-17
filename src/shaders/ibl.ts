@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { screenVS } from "./screenVS";
-import { cubeUVDefines, pmrem } from "./lib/pmrem";
+import { pmrem } from "./lib/pmrem";
 import { procSky } from "./lib/procSky";
 
 const iblShaderFS = /* glsl */ `
@@ -11,9 +11,9 @@ uniform sampler2D gNormalRoughness;
 uniform sampler2D gPositionMetalness;
 uniform sampler2D ssaoTexture;
 uniform sampler2D gEmission;
-
 uniform sampler2D brdfLUT;
 
+uniform float u_time;
 uniform vec2 u_resolution;
 uniform vec3 u_constantAmbientLight;
 uniform float u_irradianceIntensity;
@@ -142,5 +142,14 @@ export const iblShader = new THREE.RawShaderMaterial({
     u_irradianceIntensity: { value: 1.0 },
     exposure: { value: 1.0 },
     gamma: { value: 2.2 },
+    u_time: { value: 0.0 },
   },
 });
+
+iblShader.onBeforeRender = (
+  renderer,
+  scene,
+  camera: THREE.PerspectiveCamera,
+) => {
+  iblShader.uniforms.u_time.value = performance.now() / 1000.0;
+}

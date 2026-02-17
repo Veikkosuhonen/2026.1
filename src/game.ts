@@ -37,22 +37,20 @@ export const start = async (canvas: HTMLCanvasElement) => {
 
   const pipeline = await setupPipeline(gameState)
 
-  let _frameSinceLastSave = 0;
+  let frameSinceLastSave = 0;
   const animate = () => {
 
     stats.begin();
 
     controls.update(clock.getDelta())
 
-    if (++_frameSinceLastSave >= 30) {
-      _frameSinceLastSave = 0;
+    if (++frameSinceLastSave >= 30) {
+      frameSinceLastSave = 0;
       saveCameraState(gameState.mainCamera);
     }
 
     gameState.onRender();
     pipeline.render();
-    // debugLines.updateFromBuffer(game.world.debugRender())
-    // renderer.render(debugLines.lines, game.mainCamera);
     gameState.mainCamera.userData.previousViewMatrix.copy(gameState.mainCamera.matrixWorldInverse);
     stats.end();
   }

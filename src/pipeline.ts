@@ -94,8 +94,8 @@ export const setupPipeline = async (game: GameState) => {
   // composer.addPass(new BokehPass(gBuffer, game.mainCamera));
 
   const bloomPass = new BloomPass(0.1, 0.005);
-  // composer.addPass(bloomPass);
-  // composer.addPass(new DebugPass(lightBuffer.textures[0]));
+  composer.addPass(bloomPass);
+  // composer.addPass(new DebugPass(lightBuffer.textures[1]));
 
   const glitchPass = new GlitchPass()
   composer.addPass(glitchPass);

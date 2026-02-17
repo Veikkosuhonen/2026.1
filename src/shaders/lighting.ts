@@ -142,12 +142,12 @@ void main() {
   vec3 diffuseColor = (kD * albedo / PI) * radiance * ndotl;
   vec3 specularColor = specular * radiance * ndotl;
 
+  // clamp
+  // diffuseColor = clamp(diffuseColor, vec3(0.0), vec3(1000.0));
+  specularColor = clamp(specularColor, vec3(0.0), vec3(1000.0));
+
   diffuseColorOut = vec4(diffuseColor, 1.0);
-  // diffuseColorOut = vec4(lightPositionVS/100.0, 1.0);
-  // diffuseColorOut = vec4(vColor, 1.0);
   specularColorOut = vec4(specularColor, 1.0);
-  // specularColorOut = vec4(lightPositionVS/100.0, 1.0);
-  // specularColorOut = vec4(vColor, 1.0);
 }
 `;
 

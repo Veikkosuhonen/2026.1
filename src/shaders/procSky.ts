@@ -17,6 +17,7 @@ uniform sampler2D gPositionMetalness;
 uniform mat4 inverseProjection;
 uniform mat4 inverseViewMatrix;
 uniform vec2 u_resolution;
+uniform float u_time;
 
 uniform float gamma;
 uniform float exposure;
@@ -48,11 +49,11 @@ void main() {
   envColor = viewZ > 9999.0 ? envColor : fogColor;
 
   // Gamma
-  envColor = pow(envColor, vec3(1.0 / gamma));
+  // envColor = pow(envColor, vec3(1.0 / gamma));
 
 
   // Exposure
-  envColor = 1.0 - exp(-envColor * exposure);
+  // envColor = 1.0 - exp(-envColor * exposure);
 
   color = mix(color, envColor, fogFactor);
 
@@ -87,5 +88,14 @@ export const skyShader = new THREE.RawShaderMaterial({
     gamma: { value: 2.2 },
     exposure: { value: 1.0 },
     fogAmount: { value: 0.01 },
+    u_time: { value: 0.0 },
   },
 });
+
+skyShader.onBeforeRender = (
+  renderer,
+  scene,
+  camera: THREE.PerspectiveCamera,
+) => {
+  skyShader.uniforms.u_time.value = performance.now() / 1000.0;
+}
