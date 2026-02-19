@@ -227,6 +227,7 @@ in vec4 keyData;
 uniform mat4 previousWorldMatrix;
 uniform mat4 previousViewMatrix;
 uniform float u_time;
+uniform float u_growthTime;
 uniform float loudness;
 
 out vec3 vPosition;
@@ -270,7 +271,7 @@ void main() {
   vec4 posOS = vec4(position, 1.0);
 
   float key = posOS.y + keyData.w;
-  float t = min(30.0, u_time + loudness);
+  float t = min(30.0, u_growthTime + loudness);
   vec3 constantScale = vec3(1.0) - keyData.xyz;
   vec3 keyScale = keyData.xyz * smoothstep(key, key + 6.0, t);
   mMatrix *= scaleMatrix(constantScale + keyScale);
@@ -288,6 +289,7 @@ void main() {
 
   vColor = color;
   vEmissiveIntensity = emissiveIntensity * smoothstep(keyData.w + 6.0, keyData.w - 0.5, t);
+  // t is now driven by u_growthTime (Theatre.js) instead of u_time
 
   vec4 posVS = viewMatrix * posWS;
   vPosition = posVS.xyz;
@@ -310,6 +312,7 @@ export const solidstateMaterialInstanced = new THREE.ShaderMaterial({
     previousWorldMatrix: { value: new THREE.Matrix4() },
     previousViewMatrix: { value: new THREE.Matrix4() },
     u_time: { value: 0.0 },
+    u_growthTime: { value: 0.0 },
     textProjectionMatrix: { value: new THREE.Matrix4() },
     textViewMatrix: { value: new THREE.Matrix4() },
     cameraPositionWS: { value: new THREE.Vector3() },
@@ -346,6 +349,7 @@ export const solidstateMaterial = new THREE.ShaderMaterial({
     previousWorldMatrix: { value: new THREE.Matrix4() },
     previousViewMatrix: { value: new THREE.Matrix4() },
     u_time: { value: 0.0 },
+    u_growthTime: { value: 0.0 },
     textProjectionMatrix: { value: new THREE.Matrix4() },
     textViewMatrix: { value: new THREE.Matrix4() },
     cameraPositionWS: { value: new THREE.Vector3() },

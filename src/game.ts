@@ -11,6 +11,7 @@ import { setupPipeline } from './pipeline';
 import { Profiler } from './profiler';
 import { CameraControls } from './utils/CameraControls';
 import { audioManager, AudioManager } from './audio';
+import { connectCameraToTheatre, addCameraKeyframe } from './theatreThree';
 
 export const loadingManager = new THREE.LoadingManager();
 export let onLoaded: () => void;
@@ -21,7 +22,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
   const sheet = project.sheet("demo sheet");
 
   const renderer = setupRenderer(canvas);
-  const camera = setupCamera(sheet);
+  const camera = setupCamera();
   const gameState = new GameState(renderer, camera, sheet, loadingManager);
 
   setupScene(gameState)
@@ -35,7 +36,18 @@ export const start = async (canvas: HTMLCanvasElement) => {
     (controls as any)._setOrientation();
   }
 
+  // Connect camera to Theatre.js after controls exist, so rotation sync works
+  const cameraTheatreObj = connectCameraToTheatre(camera, sheet, controls);
+  camera.userData.theatreObj = cameraTheatreObj;
+
   const pipeline = await setupPipeline(gameState)
+
+  // Press K to add a keyframe at the current sequence position with the camera's current transform
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'k' || e.key === 'K') {
+      addCameraKeyframe(gameState.mainCamera, gameState.mainCamera.userData.theatreObj, sheet);
+    }
+  });
 
   let frameSinceLastSave = 0;
   const animate = () => {
@@ -49,6 +61,8 @@ export const start = async (canvas: HTMLCanvasElement) => {
       saveCameraState(gameState.mainCamera);
     }
 
+    gameState.update(clock.getDelta());
+
     gameState.onRender();
     pipeline.render();
     gameState.mainCamera.userData.previousViewMatrix.copy(gameState.mainCamera.matrixWorldInverse);
@@ -56,15 +70,15 @@ export const start = async (canvas: HTMLCanvasElement) => {
   }
 
   gameState.audio = audioManager;
-  audioManager.load('./Assembly.mp3').then(() => {
-    // audioManager.play().catch(err => console.error('Failed to play audio:', err));
+  audioManager.attachToSequence(sheet.sequence, './Assembly.mp3').then(() => {
+    audioManager.play({ iterationCount: Infinity });
   }).catch(err => {
-    console.error('Failed to load audio:', err);
+    console.error('Failed to attach audio:', err);
   });
-
-  setInterval(() => {
-    gameState.update(1 / 20);
-  }, 1 / 20)
+  
+  // setInterval(() => {
+  //   gameState.update(1 / 20);
+  // }, 1 / 20)
 
   renderer.setAnimationLoop(animate);
 }
@@ -85,7 +99,7 @@ const setupRenderer = (canvas: HTMLCanvasElement) => {
   return renderer;
 }
 
-const setupCamera = (sheet: ISheet) => {
+const setupCamera = () => {
   const fowY = 70;
   const aspect = window.innerWidth / window.innerHeight;
   const near = 0.1;

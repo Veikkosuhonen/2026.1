@@ -2,7 +2,6 @@ import { ISheet } from "@theatre/core";
 import * as THREE from "three";
 import { Entity } from "./common/entity";
 import { MATRIX } from "./math";
-import { setupTextCamera } from "./textCamera";
 import { AudioManager } from "./audio";
 
 export class GameState {
@@ -12,7 +11,6 @@ export class GameState {
   texts: THREE.Scene = new THREE.Scene();
   entities: Entity[] = [];
   mainCamera: THREE.PerspectiveCamera;
-  textCamera: THREE.PerspectiveCamera;
   uiCamera: THREE.OrthographicCamera;
   sheet: ISheet;
   loadingManager: THREE.LoadingManager;
@@ -23,7 +21,6 @@ export class GameState {
   constructor(renderer: THREE.WebGLRenderer, mainCamera: THREE.PerspectiveCamera, sheet: ISheet, loadingManager: THREE.LoadingManager) {
     this.renderer = renderer
     this.mainCamera = mainCamera
-    this.textCamera = setupTextCamera(mainCamera);
     this.sheet = sheet;
     this.loadingManager = loadingManager
     this.uiCamera = new THREE.OrthographicCamera()

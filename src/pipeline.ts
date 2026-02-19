@@ -55,7 +55,6 @@ export const setupPipeline = async (gameState: GameState) => {
   const lightingPass = new LightPass(
     gameState.lights,
     gameState.mainCamera,
-    gameState.textCamera,
     gBuffer,
     lightBuffer,
   );

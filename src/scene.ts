@@ -1,12 +1,13 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { gBufferShaderVariants, getVariantKey } from './shaders/gbuffer';
-import { ISheet } from '@theatre/core';
+import { ISheet, types } from '@theatre/core';
 import { connectThreeObjectToTheatre } from './theatreThree';
 import { GameState } from './gameState';
 import { basicRtMaterial } from './materials/basicRtMaterial';
 import { grid } from './arctic/scene';
 import { gridMaterial } from './materials/gridMaterial';
+import { solidstateMaterialInstanced } from './materials/solidstate';
 
 export const setupScene = (game: GameState) => {
   const { props, lights, entities } = grid.generate()
@@ -19,6 +20,15 @@ export const setupScene = (game: GameState) => {
   if (entities.length > 0) {
     game.entities.push(...entities)
   }
+
+  // Connect L-system growth animation to Theatre.js
+  const lSystemObj = game.sheet.object("L-System Growth", {
+    growthTime: types.number(0, { nudgeMultiplier: 0.5, range: [0, 60] }),
+  });
+
+  lSystemObj.onValuesChange((values) => {
+    solidstateMaterialInstanced.uniforms.u_growthTime.value = values.growthTime;
+  });
 
   game.scene.traverse(obj => configureSceneObjects(obj, game))
 }

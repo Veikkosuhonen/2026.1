@@ -6,14 +6,12 @@ import { lightningShaderInstanced } from "../shaders/lighting";
 export class LightPass extends RenderPass {
   lightScene: THREE.Scene;
   camera: THREE.Camera;
-  textCamera: THREE.PerspectiveCamera
   gBuffer: THREE.WebGLRenderTarget;
   lightBuffer: THREE.WebGLRenderTarget;
 
   constructor(
     lightScene: THREE.Scene,
     camera: THREE.Camera,
-    textCamera: THREE.PerspectiveCamera,
     gBuffer: THREE.WebGLRenderTarget,
     lightBuffer: THREE.WebGLRenderTarget,
   ) {
@@ -21,7 +19,6 @@ export class LightPass extends RenderPass {
     this.needsSwap = false;
     this.lightScene = lightScene;
     this.camera = camera;
-    this.textCamera = textCamera;
     this.gBuffer = gBuffer;
     this.lightBuffer = lightBuffer;
 
