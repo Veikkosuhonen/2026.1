@@ -1,6 +1,7 @@
 import * as THREE from "three";
+import { audioManager } from "~/audio";
 
-const datalakeShaderFS = /* glsl */ `
+const solidstateShaderFS = /* glsl */ `
 precision highp float;
 
 layout (location = 0) out vec4 gColorAo;
@@ -17,7 +18,7 @@ in vec3 vNormal;
 in vec3 vNormalWS;
 in vec3 vColor;
 in vec2 vUv;
-in vec3 vPositionOffset;
+in float vEmissiveIntensity;
 
 uniform float u_time;
 uniform mat4 textProjectionMatrix;
@@ -156,13 +157,13 @@ float fresnelSchlick(float cosTheta, float F0) {
 }
 
 void main() {
-  vec3 diffuse = vec3(1.0);
+  vec3 diffuse = vec3(0.5);
 
   vec3 normalVS = normalize(vNormal);
   vec3 normalWS = normalize(vNormalWS);
 
-  vec4 terrainData = terrain(vUv);
-  float roughness = clamp(0.2, 1.0, pow(terrainData.w, 1.5));
+  vec4 terrainData = terrain(vUv / 10.0);
+  float roughness = clamp(0.2, 1.0, pow(terrainData.w, 2.0));
 
   // Reduce intensity of normal for smoother look
   vec3 newNormal = normalize(terrainData.xyz);
@@ -193,39 +194,8 @@ void main() {
     14.0) 
     - 4.0;
 
-  float glow = 0.0;
-  float depth = 0.0;
-
-  for (int i = 0; i < 200; i++) {
-    vec3 offset = 0.5 * vPositionOffset * (1.0 - depth / 10.0); // Reduce wave influence with depth
-    vec3 samplePos = vPositionWS - offset + refractDir * float(i) * 0.05;
-    // 3d grid pattern
-    vec3 grid = fract(samplePos/2.0 + 0.5) - 0.5;
-    vec3 dist = abs(grid);
-    const float thickness = 0.03;
-    const float smoothing = 0.01;
-    vec3 mask = smoothstep(0.5 - thickness - smoothing, 0.5 - thickness, dist);
-    float isGrid = clamp(mask.x * mask.y + mask.y * mask.z + mask.z * mask.x, 0.0, 1.0);
-
-    depth = length(samplePos - vPositionWS);
-
-    // isGrid *= max(0.0, smoothstep(4.0, 0.0, abs(depth - pulseDepth))); // Add pulse effect
-
-    glow += isGrid * exp(-depth * 0.5);
-  }
-  glow = clamp(glow, 0.0, 6.0);
-  glow *= max(1.0 - fresnel * 2.0, 0.0);
-  glow *= 1.0 - roughness; // Reduce glow with roughness
-
   float metallic = 0.0;
-  vec3 emissive = palette(
-    vUv.y + u_time * 0.05,
-    vec3(0.5, 0.5, 0.5),
-    vec3(0.5, 0.5, 0.5),
-    vec3(1.0, 1.0, 1.0),
-    vec3(0.00, 0.33, 0.67)
-  );
-  float emissiveIntensity = 0.0;//  glow;
+  vec3 emissive = vColor * vEmissiveIntensity;
 
   vec3 orm = vec3(1.0, roughness, metallic);
 
@@ -242,20 +212,22 @@ void main() {
   gColorAo = vec4(diffuse, ao);
   gNormalRoughness = vec4(newNormalVS, roughnessM);
   gPositionMetalness = vec4(position, metalnessM);
-  gEmission = vec4(emissive * emissiveIntensity, 0.0);
+  gEmission = vec4(emissive, 0.0);
   gVelocity = vec4(velocity, 0.0, 0.0);
 }
 `;
 
-const datalakeShaderVS = /* glsl */ `
+const solidstateShaderVS = /* glsl */ `
 precision highp float;
 
-in vec3 tangent;
 in vec3 color;
+in float emissiveIntensity;
+in vec4 keyData;
 
 uniform mat4 previousWorldMatrix;
 uniform mat4 previousViewMatrix;
 uniform float u_time;
+uniform float loudness;
 
 out vec3 vPosition;
 out vec2 vUv;
@@ -266,65 +238,7 @@ out vec4 vPreviousPositionCS;
 out vec3 vNormal;
 out vec3 vNormalWS;
 out vec3 vColor;
-out vec3 vPositionOffset;
-
-#define PI 3.1415926535897932384626433832795
-#define _WaveA vec4(0.5, 0.5, 0.05, 21.0)
-#define _WaveB vec4(0.5, 0.41, 0.06, 16.1)
-#define _WaveC vec4(0.5, 0.32, 0.05, 12.2)
-#define _WaveD vec4(0.5, 0.23, 0.05, 10.3)
-#define _WaveE vec4(0.5, 0.24, 0.05, 6.4)
-#define _WaveF vec4(0.5, 0.25, 0.05, 4.5)
-#define _WaveG vec4(0.5, 0.16, 0.05, 2.6)
-#define _WaveH vec4(0.5, 0.27, 0.05, 1.7)
-#define _WaveI vec4(0.5, 0.38, 0.05, 0.8)
-
-#define _WaveBend 0.1
-#define _WaveBendLength 0.1
-#define _WaveShape 0.4
-#define _WaveAmp 0.8
-#define _WaveScale 2.0
-
-vec3 GerstnerWave(
-    vec4 wave, vec3 p, inout vec3 tangent, inout vec3 binormal, inout float peak
-) {
-
-  wave.w *= _WaveScale;
-  p.x += sin(p.z / wave.w / _WaveBendLength) * wave.w * _WaveBend;
-
-  vec2 d = normalize(wave.xy);
-
-  float steepness = wave.z;
-  float wavelength = wave.w;
-  float k = 2. * PI / wavelength;
-  float c = sqrt(9.8 / k);
-  
-  float f = k * (dot(d, p.xz) - c * u_time);
-  float a = steepness / (k * _WaveShape);
-
-  float sinf = sin(f);
-  float cosf = cos(f);
-  float ssinf = steepness * sinf;
-  float scosf = steepness * cosf;
-
-  peak += ssinf;
-
-  tangent += vec3(
-    -d.x * d.x * ssinf,
-    d.x * scosf,
-    -d.x * d.y * ssinf
-  );
-  binormal += vec3(
-    -d.x * d.y * ssinf,
-    d.y * scosf,
-    -d.y * d.y * ssinf
-  );
-  return vec3(
-    d.x * (a * cosf),
-    a * sinf,
-    d.y * (a * cosf)
-  );
-}
+out float vEmissiveIntensity;
 
 vec2 triplanar(vec3 normal, vec3 position) {
   vec3 absNormal = abs(normal);
@@ -335,15 +249,13 @@ vec2 triplanar(vec3 normal, vec3 position) {
   return uvX * weights.x + uvY * weights.y + uvZ * weights.z;
 }
 
-vec3 getTangent(vec3 normal) {
-  // Choose a helper vector that is not parallel to the normal
-  // If normal is effectively parallel to world-up (0,1,0), use world-right (1,0,0)
-  vec3 helper = abs(normal.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-  
-  // Generate tangent
-  vec3 tangent = normalize(cross(normal, helper));
-  
-  return tangent;
+mat4 scaleMatrix(vec3 scale) {
+  return mat4(
+    vec4(scale.x, 0.0, 0.0, 0.0),
+    vec4(0.0, scale.y, 0.0, 0.0),
+    vec4(0.0, 0.0, scale.z, 0.0),
+    vec4(0.0, 0.0, 0.0, 1.0)
+  );
 }
 
 void main() {
@@ -355,32 +267,18 @@ void main() {
     mat4 mvMatrix = modelViewMatrix;
   #endif
 
-  vec4 normalWS = normalize( mMatrix * vec4(normal, 0.0) );
-  vec3 tangentWS = getTangent(normalWS.xyz);
-  vec3 binormalWS = -normalize(cross(normalWS.xyz, tangentWS));
+  vec4 posOS = vec4(position, 1.0);
 
-  //vec4 normalWS = vec4(0., 1., 0., 0.);
-  //vec4 tangentWS = vec4(1. ,0. ,0., 0.);
-  //vec3 binormalWS = vec3(0., 0., 1.);
-  vec4 posWS = mMatrix * vec4(position, 1.0);
+  float key = posOS.y + keyData.w;
+  float t = min(30.0, u_time + loudness);
+  vec3 constantScale = vec3(1.0) - keyData.xyz;
+  vec3 keyScale = keyData.xyz * smoothstep(key, key + 6.0, t);
+  mMatrix *= scaleMatrix(constantScale + keyScale);
 
-  // Determine uv based on the original normal and position
+  vec4 normalWS = normalize( mMatrix * vec4(normal, 0.0));
+
+  vec4 posWS = mMatrix * posOS;
   vUv = triplanar(normalWS.xyz, posWS.xyz);
-
-  float peak = 0.0;  
-  vPositionOffset = vec3(0., 0., 0.);
-  vPositionOffset += GerstnerWave(_WaveA, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveB, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveC, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveD, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveE, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveF, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveG, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveH, posWS.xyz, tangentWS, binormalWS, peak);
-  vPositionOffset += GerstnerWave(_WaveI, posWS.xyz, tangentWS, binormalWS, peak);
-  posWS.xyz += vPositionOffset;
-
-  normalWS.xyz = normalize(cross(binormalWS, tangentWS));
 
   vNormalWS = normalWS.xyz;
   vPositionWS = posWS.xyz;
@@ -389,6 +287,7 @@ void main() {
   vNormal = normalVS.xyz;
 
   vColor = color;
+  vEmissiveIntensity = emissiveIntensity * smoothstep(keyData.w + 6.0, keyData.w - 0.5, t);
 
   vec4 posVS = viewMatrix * posWS;
   vPosition = posVS.xyz;
@@ -403,10 +302,10 @@ void main() {
 }
 `;
 
-export const datalakeMaterialInstanced = new THREE.ShaderMaterial({
-  name: "DatalakeMaterial",
-  vertexShader: datalakeShaderVS,
-  fragmentShader: datalakeShaderFS,
+export const solidstateMaterialInstanced = new THREE.ShaderMaterial({
+  name: "SolidstateMaterialInstanced",
+  vertexShader: solidstateShaderVS,
+  fragmentShader: solidstateShaderFS,
   uniforms: {
     previousWorldMatrix: { value: new THREE.Matrix4() },
     previousViewMatrix: { value: new THREE.Matrix4() },
@@ -416,6 +315,7 @@ export const datalakeMaterialInstanced = new THREE.ShaderMaterial({
     cameraPositionWS: { value: new THREE.Vector3() },
     near: { value: 0.1 },
     far: { value: 1000 },
+    loudness: { value: 0.0 },
   },
   defines: {
     USE_INSTANCING: "",
@@ -434,14 +334,14 @@ export const datalakeMaterialInstanced = new THREE.ShaderMaterial({
   stencilRef: 1,
   userData: {
     materialKeys: [],
-    attributes: [{ name: "color", size: 3 }],
+    attributes: [{ name: "color", size: 3 }, { name: "emissiveIntensity", size: 1 }, { name: "keyData", size: 4 }],
   },
 });
 
-export const datalakeMaterial = new THREE.ShaderMaterial({
-  name: "DatalakeMaterial",
-  vertexShader: datalakeShaderVS,
-  fragmentShader: datalakeShaderFS,
+export const solidstateMaterial = new THREE.ShaderMaterial({
+  name: "SolidstateMaterial",
+  vertexShader: solidstateShaderVS,
+  fragmentShader: solidstateShaderFS,
   uniforms: {
     previousWorldMatrix: { value: new THREE.Matrix4() },
     previousViewMatrix: { value: new THREE.Matrix4() },
@@ -451,6 +351,7 @@ export const datalakeMaterial = new THREE.ShaderMaterial({
     cameraPositionWS: { value: new THREE.Vector3() },
     near: { value: 0.1 },
     far: { value: 1000 },
+    loudness: { value: 0.0 },
   },
   defines: {
     // USE_INSTANCING: "",
@@ -469,31 +370,32 @@ export const datalakeMaterial = new THREE.ShaderMaterial({
   stencilRef: 1,
   userData: {
     materialKeys: [],
-    attributes: [{ name: "color", size: 3 }],
+    attributes: [{ name: "color", size: 3 }, { name: "emissiveIntensity", size: 1 }, { name: "keyData", size: 4 }],
   },
 });
 
-datalakeMaterialInstanced.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCamera, geometry, group) => {
+solidstateMaterialInstanced.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCamera, geometry, group) => {
   // const t = player.currentTime;
   // const bpm = player.bpm;
   // const bps = bpm / 60;
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
-  datalakeMaterialInstanced.uniforms.cameraPositionWS.value.copy(camera.position);
-  datalakeMaterialInstanced.uniforms.u_time.value = performance.now() / 1000;
-  datalakeMaterialInstanced.uniforms.near.value = camera.near;
-  datalakeMaterialInstanced.uniforms.far.value = camera.far;
+  solidstateMaterialInstanced.uniforms.cameraPositionWS.value.copy(camera.position);
+  solidstateMaterialInstanced.uniforms.u_time.value = performance.now() / 1000;
+  solidstateMaterialInstanced.uniforms.near.value = camera.near;
+  solidstateMaterialInstanced.uniforms.far.value = camera.far;
+  solidstateMaterialInstanced.uniforms.loudness.value = (audioManager.getEnergy() * 20.0 - 10.0);
 }
 
 
-datalakeMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCamera, geometry, group) => {
+solidstateMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCamera, geometry, group) => {
   // const t = player.currentTime;
   // const bpm = player.bpm;
   // const bps = bpm / 60;
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
-  datalakeMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
-  datalakeMaterial.uniforms.u_time.value = performance.now() / 1000;
-  datalakeMaterial.uniforms.near.value = camera.near;
-  datalakeMaterial.uniforms.far.value = camera.far;
+  solidstateMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
+  solidstateMaterial.uniforms.u_time.value = performance.now() / 1000;
+  solidstateMaterial.uniforms.near.value = camera.near;
+  solidstateMaterial.uniforms.far.value = camera.far;
 }

@@ -3,14 +3,14 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { setupScene } from './scene';
 import { MapControls, FirstPersonControls, FlyControls, PointerLockControls } from 'three/examples/jsm/Addons.js';
 import studio from '@theatre/studio'
-import { getProject } from '@theatre/core'
+import { getProject, ISheet } from '@theatre/core'
 import { GameState } from './gameState';
 // import { createLines } from './lineRenderer';
 import theatreProject from "./demo project.theatre-project-state.json";
 import { setupPipeline } from './pipeline';
 import { Profiler } from './profiler';
 import { CameraControls } from './utils/CameraControls';
-import { AudioManager } from './audio';
+import { audioManager, AudioManager } from './audio';
 
 export const loadingManager = new THREE.LoadingManager();
 export let onLoaded: () => void;
@@ -21,7 +21,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
   const sheet = project.sheet("demo sheet");
 
   const renderer = setupRenderer(canvas);
-  const camera = setupCamera();
+  const camera = setupCamera(sheet);
   const gameState = new GameState(renderer, camera, sheet, loadingManager);
 
   setupScene(gameState)
@@ -55,10 +55,9 @@ export const start = async (canvas: HTMLCanvasElement) => {
     stats.end();
   }
 
-  const audio = new AudioManager();
-  gameState.audio = audio;
-  audio.load('./Assembly.mp3').then(() => {
-    audio.play().catch(err => console.error('Failed to play audio:', err));
+  gameState.audio = audioManager;
+  audioManager.load('./Assembly.mp3').then(() => {
+    // audioManager.play().catch(err => console.error('Failed to play audio:', err));
   }).catch(err => {
     console.error('Failed to load audio:', err);
   });
@@ -86,7 +85,7 @@ const setupRenderer = (canvas: HTMLCanvasElement) => {
   return renderer;
 }
 
-const setupCamera = () => {
+const setupCamera = (sheet: ISheet) => {
   const fowY = 70;
   const aspect = window.innerWidth / window.innerHeight;
   const near = 0.1;

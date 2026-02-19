@@ -19,6 +19,7 @@ export const connectPassToTheatre = (pass: RenderPass, sheet: ISheet) => {
   const props = {
     ...numberValues,
     ...colorValues,
+    enabled: types.boolean(pass.enabled),
   }
 
   const obj = sheet.object(pass.name || "RenderPass" , props);
@@ -29,6 +30,9 @@ export const connectPassToTheatre = (pass: RenderPass, sheet: ISheet) => {
       if (typeof value === 'number') {
         // @ts-ignore
         pass[key] = value;
+      } else if (typeof value === 'boolean') {
+        // @ts-ignore
+        pass[key] = value;
       } else if (value) {
         (pass[key] as any as THREE.Color).set(value.r, value.g, value.b);
       }
@@ -36,7 +40,7 @@ export const connectPassToTheatre = (pass: RenderPass, sheet: ISheet) => {
   });
 }
 
-export const connectObjectToTheatre = (object: THREE.Object3D, sheet: ISheet) => {
+export const connectThreeObjectToTheatre = (object: THREE.Object3D, sheet: ISheet) => {
   const obj = sheet.object(object.name || "Object3D", {
     position: theatreVector3(object.position),
     rotation: theatreEuler(object.rotation),

@@ -5,6 +5,7 @@ import { Entity } from "~/common/entity";
 import { SceneObject } from "~/common/objects";
 import { buildInstanced, buildInstancedLights } from "../common/instancedHelpers";
 import { createLightEntities } from "./lightEntities";
+import { createLSystemPlant } from "./lSystemPlants";
 
 export type BlockGen = () => THREE.Object3D;
 
@@ -35,8 +36,12 @@ export const grid = {
     lights.add(instancedLights);
     entities.push(entity);
 
+    // L-System Plants
+    const { group: lSystemGroup, lights: lSystemLights } = createLSystemPlant(new THREE.Vector3(100, -4, 100));
+    group.add(lSystemGroup);
+    lights.add(lSystemLights);
 
-    const instancedObjs = generate(this.width, this.height);
+    const instancedObjs = []//generate(this.width, this.height);
     instancedObjs.forEach((obj) => group.add(obj.toObject3D()));
 
     const dynamicLightDatas: THREE.PointLight[] = [];

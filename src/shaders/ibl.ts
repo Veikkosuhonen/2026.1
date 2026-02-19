@@ -32,7 +32,7 @@ vec3 getIrradiance(vec3 normal) {
 }
 
 vec3 getReflectionColor(vec3 R, float roughness) {
-  return getSkyColor(R, 0.1 + roughness);
+  return getSkyColor(R, 0.0 + roughness);
 }
 
 #else

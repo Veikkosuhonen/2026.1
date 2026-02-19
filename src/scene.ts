@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { gBufferShaderVariants, getVariantKey } from './shaders/gbuffer';
 import { ISheet } from '@theatre/core';
-import { connectObjectToTheatre } from './theatreThree';
+import { connectThreeObjectToTheatre } from './theatreThree';
 import { GameState } from './gameState';
 import { basicRtMaterial } from './materials/basicRtMaterial';
 import { grid } from './arctic/scene';
@@ -26,7 +26,7 @@ export const setupScene = (game: GameState) => {
 const configureSceneObjects = (object: THREE.Object3D, game: GameState) => {
 
   if ("t_id" in object.userData) {
-    connectObjectToTheatre(object, game.sheet);
+    connectThreeObjectToTheatre(object, game.sheet);
   }
 
   object.userData.previousWorldMatrix = object.matrixWorld;

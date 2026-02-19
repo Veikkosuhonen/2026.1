@@ -71,9 +71,9 @@ vec3 getSkyColor(vec3 viewDirectionWS, float detailLevel) {
 
   float sunRadius = 0.15;
   float VdotS = dot(viewDirectionWS, sunDirection);
-  float sunDisk = smoothstep(0.99, 0.992, VdotS);
+  float sunDisk = smoothstep(0.99 - detailLevel * 0.6, 0.992 + detailLevel * 0.05, VdotS);
 
-  if (sunDisk > 0.0) {
+  if (sunDisk > 0.0 && detailLevel <= 0.1) {
     // Build a tangent frame around the sun direction
     vec3 up = abs(sunDirection.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent = normalize(cross(up, sunDirection));
@@ -99,9 +99,9 @@ vec3 getSkyColor(vec3 viewDirectionWS, float detailLevel) {
   }
 
   // Corona
-  sunDisk += smoothstep(0.993, 0.991, VdotS) * smoothstep(0.988, 1.015, VdotS);
+  sunDisk += smoothstep(0.993, 0.991, VdotS) * smoothstep(0.988, 1.015, VdotS) * (1.0 - detailLevel);
 
-  col += vec3(1.0, 0.15, 0.05) * sunDisk * 30.0;
+  col += vec3(1.0, 0.15, 0.05) * sunDisk * 30.0 * (1.0 - detailLevel * 0.5);
 
   float sunGlow = min(2.0, 0.5 / (length(viewDirectionWS - sunDirection) * 4.0 + 0.001));
   col += vec3(1.0, 0.5, 0.1) * sunGlow;

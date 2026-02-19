@@ -25,9 +25,9 @@ export class Shard {
       .multiplyScalar(0.5);
     b.position.set(center.x, 0, center.y);
     b.scale.set(
-      20.0,
-      20.0,
-      20.0,
+      10.0,
+      10.0,
+      10.0,
     );
     obj.add(b);
 

@@ -354,3 +354,5 @@ export class AudioManager {
     return sum / (hiIdx - loIdx + 1);
   }
 }
+
+export const audioManager = new AudioManager();

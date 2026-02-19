@@ -1,9 +1,7 @@
 import * as THREE from "three";
 import {
-  ACESFilmicToneMappingShader,
   EffectComposer,
   RGBELoader,
-  ShaderPass,
 } from "three/examples/jsm/Addons.js";
 import { BloomPass } from "./renderPasses/BloomPass";
 import { BokehPass } from "./renderPasses/BokehPass";
@@ -34,37 +32,38 @@ import { lampMaterial } from "./materials/lamp";
 import { lightningShaderInstanced } from "./shaders/lighting";
 import { ProcSkyPass } from "./renderPasses/ProcSkyPass";
 import { GlitchPass } from "./renderPasses/GlitchPass";
+import { ToneMappingPass } from "./renderPasses/ToneMappingPass";
 
-export const setupPipeline = async (game: GameState) => {
+export const setupPipeline = async (gameState: GameState) => {
   const depthStencilTexture = setupDepthStencilTexture();
   const gBuffer = setupGBuffer(depthStencilTexture);
   const lightBuffer = setupLightBuffer(depthStencilTexture);
   const textBuffer = setupTextBuffer();
-  const brdfLUT = generateBrdfLUT(game.renderer);
+  const brdfLUT = generateBrdfLUT(gameState.renderer);
 
-  const composer = setupComposer(game.renderer, depthStencilTexture);
+  const composer = setupComposer(gameState.renderer, depthStencilTexture);
 
   const savePass = new SavePass(gBuffer.width, gBuffer.height);
 
-  composer.addPass(new TextPass(game.texts, game.uiCamera, textBuffer))
+  composer.addPass(new TextPass(gameState.texts, gameState.uiCamera, textBuffer))
 
-  composer.addPass(new GBufferPass(game.scene, game.mainCamera, gBuffer));
+  composer.addPass(new GBufferPass(gameState.scene, gameState.mainCamera, gBuffer));
 
-  const ssaoPass = new SSAOPass(gBuffer, game.mainCamera);
+  const ssaoPass = new SSAOPass(gBuffer, gameState.mainCamera);
   composer.addPass(ssaoPass);
 
   const lightingPass = new LightPass(
-    game.lights,
-    game.mainCamera,
-    game.textCamera,
+    gameState.lights,
+    gameState.mainCamera,
+    gameState.textCamera,
     gBuffer,
     lightBuffer,
   );
   composer.addPass(lightingPass);
 
   const iblPass = new IBLPass(
-    game.scene,
-    game.mainCamera,
+    gameState.scene,
+    gameState.mainCamera,
     gBuffer,
     lightBuffer,
     ssaoPass.ssaoBuffer.texture,
@@ -72,15 +71,13 @@ export const setupPipeline = async (game: GameState) => {
   )
   composer.addPass(iblPass);
 
-  composer.addPass(
-    new TexturePass("IBL Diffuse output", lightBuffer.textures[0]),
-  );
+  composer.addPass(new TexturePass("IBL Diffuse output", lightBuffer.textures[0]),);
 
-  composer.addPass(new ProcSkyPass(gBuffer, game.mainCamera));
+  composer.addPass(new ProcSkyPass(gBuffer, gameState.mainCamera));
 
   const ssrPass = new SSRPass(
     gBuffer,
-    game.mainCamera,
+    gameState.mainCamera,
     savePass.buffer.texture,
     lightBuffer.textures[1],
     brdfLUT,
@@ -100,10 +97,10 @@ export const setupPipeline = async (game: GameState) => {
   const glitchPass = new GlitchPass()
   composer.addPass(glitchPass);
 
-  composer.addPass(new ShaderPass(ACESFilmicToneMappingShader));
+  composer.addPass(new ToneMappingPass());
 
   composer.passes.forEach((pass) =>
-    connectPassToTheatre(pass as RenderPass, game.sheet),
+    connectPassToTheatre(pass as RenderPass, gameState.sheet),
   );
 
   return composer;
