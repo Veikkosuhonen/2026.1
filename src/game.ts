@@ -70,8 +70,8 @@ export const start = async (canvas: HTMLCanvasElement) => {
   }
 
   gameState.audio = audioManager;
-  audioManager.attachToSequence(sheet.sequence, './Assembly.mp3').then(() => {
-    audioManager.play({ iterationCount: Infinity });
+  audioManager.attachToSequence(sheet.sequence, './grid-attack.mp3').then(() => {
+    audioManager.play({ iterationCount: 1 });
   }).catch(err => {
     console.error('Failed to attach audio:', err);
   });

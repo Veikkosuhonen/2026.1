@@ -114,7 +114,7 @@ vec3 getSkyColor(vec3 viewDirectionWS, float detailLevel) {
     vec3 starcolor = vec3(pow(rnd.y,40.0));
 
     starcolor *= pow(viewDirectionWS.y, 0.4);
-    starcolor = max(vec3(0.0), starcolor);
+    starcolor = max(vec3(0.001), starcolor);
 
     col += starcolor * 2.0;
   }
