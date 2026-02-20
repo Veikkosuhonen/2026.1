@@ -88,7 +88,7 @@ export const cylinderInstance = () => {
   return b;
 };
 
-function baseObject() {
+export function baseObject() {
   const b = new THREE.Object3D() as SceneObject;
   b.material = new ObjectMaterialData();
   return b;

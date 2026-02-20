@@ -1,17 +1,14 @@
 import * as THREE from 'three'
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { setupScene } from './scene';
-import { MapControls, FirstPersonControls, FlyControls, PointerLockControls } from 'three/examples/jsm/Addons.js';
 import studio from '@theatre/studio'
-import { getProject, ISheet } from '@theatre/core'
+import { getProject } from '@theatre/core'
 import { GameState } from './gameState';
-// import { createLines } from './lineRenderer';
 import theatreProject from "./demo project.theatre-project-state.json";
 import { setupPipeline } from './pipeline';
-import { Profiler } from './profiler';
 import { CameraControls } from './utils/CameraControls';
 import { audioManager, AudioManager } from './audio';
-import { connectCameraToTheatre, addCameraKeyframe } from './theatreThree';
+import { connectCameraToTheatre, addCameraKeyframe, connectCameraFollowToTheatre, CameraFollowController } from './theatreThree';
 
 export const loadingManager = new THREE.LoadingManager();
 export let onLoaded: () => void;
@@ -40,6 +37,12 @@ export const start = async (canvas: HTMLCanvasElement) => {
   const cameraTheatreObj = connectCameraToTheatre(camera, sheet, controls);
   camera.userData.theatreObj = cameraTheatreObj;
 
+  // Camera follow mode – follows a light entity boid
+  let cameraFollow: CameraFollowController | null = null;
+  if (gameState.lightEntity) {
+    cameraFollow = connectCameraFollowToTheatre(camera, sheet, gameState.lightEntity);
+  }
+
   const pipeline = await setupPipeline(gameState)
 
   // Press K to add a keyframe at the current sequence position with the camera's current transform
@@ -54,14 +57,22 @@ export const start = async (canvas: HTMLCanvasElement) => {
 
     stats.begin();
 
-    controls.update(clock.getDelta())
+    const delta = clock.getDelta();
+
+    // Skip manual controls when camera follow is active
+    if (!cameraFollow?.enabled) {
+      controls.update(delta);
+    }
 
     if (++frameSinceLastSave >= 30) {
       frameSinceLastSave = 0;
       saveCameraState(gameState.mainCamera);
     }
 
-    gameState.update(clock.getDelta());
+    gameState.update(delta * 10.0);
+
+    // Update camera follow after entities so boid positions are fresh
+    cameraFollow?.update(delta);
 
     gameState.onRender();
     pipeline.render();
@@ -70,7 +81,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
   }
 
   gameState.audio = audioManager;
-  audioManager.attachToSequence(sheet.sequence, './grid-attack.mp3').then(() => {
+  audioManager.attachToSequence(sheet.sequence, './Assembly.mp3').then(() => {
     audioManager.play({ iterationCount: 1 });
   }).catch(err => {
     console.error('Failed to attach audio:', err);

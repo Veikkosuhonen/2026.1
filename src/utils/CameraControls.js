@@ -342,8 +342,8 @@ function onKeyDown( event ) {
     case 'ArrowRight':
     case 'KeyD': this._moveRight = true; break;
 
-    case 'Space': this._moveUp = true; break;
-    case 'ShiftLeft': this._moveDown = true; break;
+    case 'KeyE': this._moveUp = true; break;
+    case 'KeyQ': this._moveDown = true; break;
 
   }
 
@@ -365,8 +365,8 @@ function onKeyUp( event ) {
     case 'ArrowRight':
     case 'KeyD': this._moveRight = false; break;
 
-    case 'Space': this._moveUp = false; break;
-    case 'ShiftLeft': this._moveDown = false; break;
+    case 'KeyE': this._moveUp = false; break;
+    case 'KeyQ': this._moveDown = false; break;
 
   }
 

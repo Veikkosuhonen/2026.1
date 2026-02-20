@@ -108,6 +108,78 @@ export const addCameraKeyframe = (
   );
 };
 
+export interface CameraFollowController {
+  update(deltaTime: number): void;
+  readonly enabled: boolean;
+}
+
+export const connectCameraFollowToTheatre = (
+  camera: THREE.PerspectiveCamera,
+  sheet: ISheet,
+  lightEntity: { getInstancePosition(i: number): THREE.Vector3; getInstanceQuaternion(i: number): THREE.Quaternion; count: number },
+): CameraFollowController => {
+  const state = {
+    enabled: false,
+    followIndex: 0,
+    offset: new THREE.Vector3(0, 10, -20),
+    smoothing: 0.05,
+  };
+
+  const obj = sheet.object("Camera Follow", {
+    enabled: types.boolean(false),
+    followIndex: types.number(0, { nudgeMultiplier: 1, range: [0, lightEntity.count - 1] }),
+    offsetX: types.number(0, { nudgeMultiplier: 1 }),
+    offsetY: types.number(10, { nudgeMultiplier: 1 }),
+    offsetZ: types.number(-20, { nudgeMultiplier: 1 }),
+    smoothing: types.number(0.05, { nudgeMultiplier: 0.01, range: [0.001, 0.1] }),
+  });
+
+  obj.onValuesChange((values) => {
+    state.enabled = values.enabled;
+    state.followIndex = Math.floor(Math.max(0, Math.min(values.followIndex, lightEntity.count - 1)));
+    state.offset.set(values.offsetX, values.offsetY, values.offsetZ);
+    state.smoothing = values.smoothing;
+  });
+
+  const _targetPos = new THREE.Vector3();
+  const _lookAtTarget = new THREE.Vector3();
+  const _currentLookAt = new THREE.Vector3();
+  let _initialized = false;
+
+  return {
+    update(_deltaTime: number) {
+      if (!state.enabled) {
+        _initialized = false;
+        return;
+      }
+
+      const idx = state.followIndex;
+      const boidPos = lightEntity.getInstancePosition(idx);
+      const boidQuat = lightEntity.getInstanceQuaternion(idx);
+
+      // Target camera position = boid position + offset rotated by boid orientation
+      _targetPos.copy(state.offset).applyQuaternion(boidQuat).add(boidPos);
+
+      if (!_initialized) {
+        camera.position.copy(_targetPos);
+        _currentLookAt.copy(boidPos);
+        _initialized = true;
+      }
+
+      // Smooth follow position
+      camera.position.lerp(_targetPos, state.smoothing);
+
+      // Smooth look-at target
+      _currentLookAt.lerp(boidPos, state.smoothing);
+      camera.lookAt(_currentLookAt);
+      camera.updateProjectionMatrix();
+    },
+    get enabled() {
+      return state.enabled;
+    },
+  };
+};
+
 const theatreVector3 = (vector: THREE.Vector3) => types.compound({ x: vector.x, y: vector.y, z: vector.z });
 
 const theatreEuler = (euler: THREE.Euler) => types.compound({ x: r2d(euler.x), y: r2d(euler.y), z: r2d(euler.z) });

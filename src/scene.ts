@@ -10,7 +10,7 @@ import { gridMaterial } from './materials/gridMaterial';
 import { solidstateMaterialInstanced } from './materials/solidstate';
 
 export const setupScene = (game: GameState) => {
-  const { props, lights, entities } = grid.generate()
+  const { props, lights, entities, lightEntity } = grid.generate()
   game.scene.add(props)
 
   if (lights.children.length > 0) {
@@ -20,6 +20,8 @@ export const setupScene = (game: GameState) => {
   if (entities.length > 0) {
     game.entities.push(...entities)
   }
+
+  game.lightEntity = lightEntity;
 
   // Connect L-system growth animation to Theatre.js
   const lSystemObj = game.sheet.object("L-System Growth", {

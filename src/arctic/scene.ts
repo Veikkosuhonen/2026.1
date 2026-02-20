@@ -4,7 +4,7 @@ import { createGround } from "./ground";
 import { Entity } from "~/common/entity";
 import { SceneObject } from "~/common/objects";
 import { buildInstanced, buildInstancedLights } from "../common/instancedHelpers";
-import { createLightEntities } from "./lightEntities";
+import { createLightEntities, LightEntityController } from "./lightEntities";
 import { createLSystemPlant } from "./lSystemPlants";
 
 export type BlockGen = () => THREE.Object3D;
@@ -13,11 +13,12 @@ type GeneratorResult = {
   props: THREE.Object3D;
   lights: THREE.Object3D;
   entities: Entity[];
+  lightEntity: LightEntityController;
 };
 
 export const grid = {
-  width: 200,
-  height: 200,
+  width: 800,
+  height: 800,
 
   generate(): GeneratorResult {
     console.time("generate");
@@ -41,7 +42,7 @@ export const grid = {
     group.add(lSystemGroup);
     lights.add(lSystemLights);
 
-    const instancedObjs = []//generate(this.width, this.height);
+    const instancedObjs = generate(this.width, this.height);
     instancedObjs.forEach((obj) => group.add(obj.toObject3D()));
 
     const dynamicLightDatas: THREE.PointLight[] = [];
@@ -122,6 +123,7 @@ export const grid = {
       props: group,
       lights,
       entities,
+      lightEntity: entity,
     };
   },
 };

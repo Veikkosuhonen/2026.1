@@ -1,6 +1,7 @@
 import { ISheet } from "@theatre/core";
 import * as THREE from "three";
 import { Entity } from "./common/entity";
+import { LightEntityController } from "./arctic/lightEntities";
 import { MATRIX } from "./math";
 import { AudioManager } from "./audio";
 
@@ -10,6 +11,7 @@ export class GameState {
   lights: THREE.Scene = new THREE.Scene();
   texts: THREE.Scene = new THREE.Scene();
   entities: Entity[] = [];
+  lightEntity: LightEntityController | null = null;
   mainCamera: THREE.PerspectiveCamera;
   uiCamera: THREE.OrthographicCamera;
   sheet: ISheet;

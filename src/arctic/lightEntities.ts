@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { Entity } from "~/common/entity";
 import { buildInstanced, buildInstancedLights } from "~/common/instancedHelpers";
-import { SceneObject, sphereInstance } from "~/common/objects";
+import { SceneObject, baseObject } from "~/common/objects";
+import { creatureMaterialInstanced } from "~/materials/creature";
 import { MATRIX } from "~/math";
 
-const BOID_COUNT = 100;
+const BOID_COUNT = 300;
 const PERCEPTION_RADIUS = 40;
 const SEPARATION_RADIUS = 15;
 const MAX_SPEED = 3;
@@ -14,6 +15,16 @@ const SEPARATION_WEIGHT = 2.5;
 const ALIGNMENT_WEIGHT = 1.0;
 const COHESION_WEIGHT = 1.0;
 const CENTER_WEIGHT = 0.0005;
+
+export interface LightEntityController extends Entity {
+  center: THREE.Vector3;
+  FORWARD: THREE.Vector3;
+  DIR: THREE.Vector3;
+  getInstancePosition(index: number): THREE.Vector3;
+  getInstanceQuaternion(index: number): THREE.Quaternion;
+  readonly count: number;
+  update(deltaTime: number): void;
+}
 
 export const createLightEntities = () => {
 
@@ -39,8 +50,9 @@ export const createLightEntities = () => {
 
     dynamicLightDatas.push(light);
 
-    const object = sphereInstance()
-    object.scale.set(0.9, 0.3, 0.3);
+    const object = baseObject(); // sphereInstance()
+    object.scale.set(10.0, 10.0, 10.0);
+    object.material.customShader = creatureMaterialInstanced;
     object.material.emissive.setHex(0xaabbff).multiplyScalar(5);
     object.position.copy(light.position);
     object.updateMatrixWorld();
@@ -48,7 +60,7 @@ export const createLightEntities = () => {
     objects.push(object);
   }
 
-  const instancedObjects = buildInstanced(new THREE.SphereGeometry(1, 64, 48), objects);
+  const instancedObjects = buildInstanced(new THREE.CylinderGeometry(0.3, 0.3, 1, 12, 16), objects);
   const instancedLights = buildInstancedLights(dynamicLightDatas);
 
   // Reusable vectors to avoid allocations in the update loop
@@ -64,10 +76,19 @@ export const createLightEntities = () => {
     accelerations.push(new THREE.Vector3());
   }
 
-  const entity = {
+  const entity: LightEntityController = {
     center: new THREE.Vector3(100, 5, 100),
-    FORWARD: new THREE.Vector3(1, 0, 0),
-    DIR: new THREE.Vector3(1, 0, 0),
+    FORWARD: new THREE.Vector3(0, 1, 0),
+    DIR: new THREE.Vector3(0, 1, 0),
+    count: BOID_COUNT,
+
+    getInstancePosition(index: number): THREE.Vector3 {
+      return dynamicLightDatas[index].position;
+    },
+
+    getInstanceQuaternion(index: number): THREE.Quaternion {
+      return objects[index].quaternion;
+    },
 
     update(deltaTime: number) {
       const objectsMatrixAttrib = instancedObjects.geometry.getAttribute("instanceMatrix");
@@ -170,8 +191,8 @@ export const createLightEntities = () => {
         light.position.addScaledVector(vel, deltaTime);
 
         // Ground bounce
-        if (light.position.y < 1) {
-          light.position.y = 1;
+        if (light.position.y < -2) {
+          light.position.y = -2;
           vel.y *= -0.5;
         }
 
