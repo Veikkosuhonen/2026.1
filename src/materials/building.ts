@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { flicker } from "../shaders/lib/flicker";
+import { getSequence } from "~/sequence";
 
 const buildingShaderFS = /* glsl */ `
 precision highp float;
@@ -188,7 +189,7 @@ buildingMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCam
   // const beat = Math.floor(2 * t * bps);
   // buildingMaterial.uniforms.u_time.value = beat;
   buildingMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
-  buildingMaterial.uniforms.u_time.value = performance.now() / 1000;
+  buildingMaterial.uniforms.u_time.value = getSequence().position;
   buildingMaterial.uniforms.near.value = camera.near;
   buildingMaterial.uniforms.far.value = camera.far;
 }

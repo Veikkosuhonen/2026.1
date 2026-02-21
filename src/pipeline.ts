@@ -25,7 +25,7 @@ import { GameState } from "./gameState";
 import { DebugPass } from "./renderPasses/DebugPass";
 import { FogPass } from "./renderPasses/FogPass";
 import { MotionBlurPass } from "./renderPasses/MotionBlurPass";
-import { TextPass } from "./renderPasses/TextPass";
+import { UiPass } from "./renderPasses/UiPass";
 import { buildingMaterial } from "./materials/building";
 import { lightningShader } from "./shaders";
 import { lampMaterial } from "./materials/lamp";
@@ -33,6 +33,7 @@ import { lightningShaderInstanced } from "./shaders/lighting";
 import { ProcSkyPass } from "./renderPasses/ProcSkyPass";
 import { GlitchPass } from "./renderPasses/GlitchPass";
 import { ToneMappingPass } from "./renderPasses/ToneMappingPass";
+import { UiCompositePass } from "./renderPasses/UiCompositePass";
 
 export const setupPipeline = async (gameState: GameState) => {
   const depthStencilTexture = setupDepthStencilTexture();
@@ -44,8 +45,6 @@ export const setupPipeline = async (gameState: GameState) => {
   const composer = setupComposer(gameState.renderer, depthStencilTexture);
 
   const savePass = new SavePass(gBuffer.width, gBuffer.height);
-
-  composer.addPass(new TextPass(gameState.texts, gameState.uiCamera, textBuffer))
 
   composer.addPass(new GBufferPass(gameState.scene, gameState.mainCamera, gBuffer));
 
@@ -87,11 +86,15 @@ export const setupPipeline = async (gameState: GameState) => {
 
   composer.addPass(savePass);
 
-  // composer.addPass(new BokehPass(gBuffer, game.mainCamera));
+  composer.addPass(new BokehPass(gBuffer, gameState.mainCamera));
+
+  composer.addPass(new UiPass(gameState.texts, gameState.uiCamera, textBuffer))
+
+  composer.addPass(new UiCompositePass(textBuffer.texture))
 
   const bloomPass = new BloomPass(0.1, 0.005);
   composer.addPass(bloomPass);
-  // composer.addPass(new DebugPass(lightBuffer.textures[1]));
+  // composer.addPass(new DebugPass(textBuffer.texture));
 
   const glitchPass = new GlitchPass()
   composer.addPass(glitchPass);
@@ -174,16 +177,12 @@ const setupTextBuffer = () => {
     window.innerHeight,
     {
       format: THREE.RGBAFormat,
-      type: THREE.HalfFloatType,
+      type: THREE.UnsignedByteType,
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
       count: 1,
     },
   );
-
-  buildingMaterial.uniforms.uiTexture.value = textBuffer.texture;
-  lightningShaderInstanced.uniforms.uiTexture.value = textBuffer.texture;
-  lampMaterial.uniforms.uiTexture.value = textBuffer.texture;
 
   return textBuffer;
 };

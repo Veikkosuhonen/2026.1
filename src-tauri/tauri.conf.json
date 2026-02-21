@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "demo",
+  "productName": "Exology",
   "version": "0.1.0",
-  "identifier": "me.zyl.demo",
+  "identifier": "me.zyl.exology",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -13,11 +13,11 @@
   "app": {
     "windows": [
       {
-        "title": "demo",
-        "width": 1280,
-        "height": 1000,
+        "title": "Exology",
+        "width": 1920,
+        "height": 1080,
         "resizable": false,
-        "fullscreen": false
+        "fullscreen": true
       }
     ],
     "security": {
@@ -27,6 +27,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": []
+    "icon": [
+      "icons/icon.ico"
+    ]
   }
 }

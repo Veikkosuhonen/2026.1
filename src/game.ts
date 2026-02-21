@@ -2,21 +2,31 @@ import * as THREE from 'three'
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { setupScene } from './scene';
 import studio from '@theatre/studio'
-import { getProject } from '@theatre/core'
+import { getProject, ISheet } from '@theatre/core'
 import { GameState } from './gameState';
-import theatreProject from "./demo project.theatre-project-state.json";
+import theatreProject from "./finalestest.theatre-project-state.json";
 import { setupPipeline } from './pipeline';
 import { CameraControls } from './utils/CameraControls';
 import { audioManager, AudioManager } from './audio';
-import { connectCameraToTheatre, addCameraKeyframe, connectCameraFollowToTheatre, CameraFollowController } from './theatreThree';
+import { connectCameraToTheatre, addCameraKeyframe, connectCameraFollowToTheatre, CameraFollowController, connectShaderToTheatre } from './theatreThree';
+import { solidstateMaterialInstanced } from './materials/solidstate';
+import { datalakeMaterial, datalakeMaterialInstanced } from './materials/datalake';
+import { setupUI } from './arctic/ui';
+import { setSheet } from './sequence';
 
 export const loadingManager = new THREE.LoadingManager();
 export let onLoaded: () => void;
 
 export const start = async (canvas: HTMLCanvasElement) => {
-  studio.initialize();
-  const project = getProject("demo project", { state: theatreProject });
+  const DEV = import.meta.env.DEV;
+  if (DEV) {
+    studio.initialize();
+  }
+  const project = getProject("final", { state: theatreProject });
   const sheet = project.sheet("demo sheet");
+  setSheet(sheet);
+
+  console.log(sheet)
 
   const renderer = setupRenderer(canvas);
   const camera = setupCamera();
@@ -24,12 +34,12 @@ export const start = async (canvas: HTMLCanvasElement) => {
 
   setupScene(gameState)
 
-  const stats = setupStats();
+  // const stats = setupStats();
 
   // const debugLines = createLines();
   const clock = new THREE.Clock();
   const controls = setupControls(gameState.mainCamera, renderer);
-  if (restoreCameraState(gameState.mainCamera)) {
+  if (DEV && restoreCameraState(gameState.mainCamera)) {
     (controls as any)._setOrientation();
   }
 
@@ -43,10 +53,14 @@ export const start = async (canvas: HTMLCanvasElement) => {
     cameraFollow = connectCameraFollowToTheatre(camera, sheet, gameState.lightEntity);
   }
 
-  const pipeline = await setupPipeline(gameState)
+  connectMaterialsToTheatre(sheet);
 
+  setupUI(gameState);
+
+  const pipeline = await setupPipeline(gameState)
+  
   // Press K to add a keyframe at the current sequence position with the camera's current transform
-  window.addEventListener('keydown', (e) => {
+  if (DEV) window.addEventListener('keydown', (e) => {
     if (e.key === 'k' || e.key === 'K') {
       addCameraKeyframe(gameState.mainCamera, gameState.mainCamera.userData.theatreObj, sheet);
     }
@@ -55,7 +69,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
   let frameSinceLastSave = 0;
   const animate = () => {
 
-    stats.begin();
+    // stats.begin();
 
     const delta = clock.getDelta();
 
@@ -64,7 +78,7 @@ export const start = async (canvas: HTMLCanvasElement) => {
       controls.update(delta);
     }
 
-    if (++frameSinceLastSave >= 30) {
+    if (DEV && (++frameSinceLastSave >= 30)) {
       frameSinceLastSave = 0;
       saveCameraState(gameState.mainCamera);
     }
@@ -77,23 +91,20 @@ export const start = async (canvas: HTMLCanvasElement) => {
     gameState.onRender();
     pipeline.render();
     gameState.mainCamera.userData.previousViewMatrix.copy(gameState.mainCamera.matrixWorldInverse);
-    stats.end();
+    // stats.end();
   }
 
   gameState.audio = audioManager;
   audioManager.attachToSequence(sheet.sequence, './Assembly.mp3').then(() => {
-    audioManager.play({ iterationCount: 1 });
+    if (!DEV) 
+      audioManager.play({ iterationCount: 1 });
   }).catch(err => {
     console.error('Failed to attach audio:', err);
   });
-  
-  // setInterval(() => {
-  //   gameState.update(1 / 20);
-  // }, 1 / 20)
 
   renderer.setAnimationLoop(animate);
 }
-
+  
 const setupRenderer = (canvas: HTMLCanvasElement) => {
   const renderer = new THREE.WebGLRenderer({ 
     canvas,
@@ -178,3 +189,8 @@ const restoreCameraState = (camera: THREE.PerspectiveCamera): boolean => {
     return false;
   }
 };
+
+const connectMaterialsToTheatre = (sheet: ISheet) => {
+  connectShaderToTheatre(datalakeMaterial, ['u_glow'], sheet, 'SolidState Material');
+  connectShaderToTheatre(datalakeMaterialInstanced, ['u_glow'], sheet, 'SolidState Material');
+}

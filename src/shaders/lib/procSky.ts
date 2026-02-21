@@ -91,7 +91,8 @@ vec3 getSkyColor(vec3 viewDirectionWS, float detailLevel) {
     vec3 sunNormal = normalize(nu * tangent + nv * bitangent + nw * sunDirection);
     sunNormal = rotationMatrix(vec3(0.0, 1.0, 0.0), u_time * 0.05) * sunNormal;
 
-    vec2 vor = voronoi4d(vec4(sunNormal * 15.0, u_time * 0.5)) * voronoi4d(vec4(sunNormal * 7.0, u_time * 0.1)) * 1.0;
+    vec2 vor = voronoi4d(vec4(sunNormal * 20.0, u_time * 0.5)) 
+            * voronoi4d(vec4(sunNormal * 10.0, u_time * 0.1)) * 1.0;
     float noise = pow(max(0.1, 1.0-vor.y), 0.7);
     noise += 0.2 * (vor.x - vor.y);
     noise = max(0.0, noise);
@@ -111,7 +112,7 @@ vec3 getSkyColor(vec3 viewDirectionWS, float detailLevel) {
     vec3 seed = viewDirectionWS * (1.0 - detailLevel * 9.0);
     seed = floor(seed * u_resolution.x);
     vec3 rnd = nrand3( seed );
-    vec3 starcolor = vec3(pow(rnd.y,40.0));
+    vec3 starcolor = 1.0 * vec3(pow(rnd.y, 100.0));
 
     starcolor *= pow(viewDirectionWS.y, 0.4);
     starcolor = max(vec3(0.001), starcolor);

@@ -32,7 +32,7 @@ vec3 random3(vec2 p) {
 
 const int MAX_STEPS = 200;
 
-const int N_SAMPLES = 0;
+const int N_SAMPLES = 1;
 
 float pointToLineDistance(vec3 x0, vec3 x1, vec3 x2) {
   //x0: point, x1: linePointA, x2: linePointB
@@ -143,7 +143,7 @@ void main() {
 
       vec3 vP = texture(gPositionMetalness, uv).xyz;
       float vZ = vP.z;
-      // if (vZ >= cameraFar) continue;
+      if (vZ >= cameraFar) continue;
       float cW = projection[2][3] * vZ + projection[3][3];
 
       float recipVPZ = 1. / viewPosition.z;
@@ -167,8 +167,8 @@ void main() {
       if (hit) {
         vec3 vN = normalize(texture(gNormalRoughness, uv).xyz);
         if (dot(viewReflectDir, vN) >= 0.0) continue;
-        // float distance = pointPlaneDistance(vP, viewPosition, viewNormal);
-        // if (distance > maxDistance) break;
+        float distance = pointPlaneDistance(vP, viewPosition, viewNormal);
+        if (distance > maxDistance) break;
 
         hitData.screenPos = uv;
         hitData.isHit = 1.0;

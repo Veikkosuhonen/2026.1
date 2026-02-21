@@ -131,7 +131,7 @@ export const connectCameraFollowToTheatre = (
     offsetX: types.number(0, { nudgeMultiplier: 1 }),
     offsetY: types.number(10, { nudgeMultiplier: 1 }),
     offsetZ: types.number(-20, { nudgeMultiplier: 1 }),
-    smoothing: types.number(0.05, { nudgeMultiplier: 0.01, range: [0.001, 0.1] }),
+    smoothing: types.number(0.05, { nudgeMultiplier: 0.01, range: [0.001, 1.0] }),
   });
 
   obj.onValuesChange((values) => {
@@ -179,6 +179,76 @@ export const connectCameraFollowToTheatre = (
     },
   };
 };
+
+export const connectShaderToTheatre = (
+  material: THREE.ShaderMaterial,
+  uniforms: string[],
+  sheet: ISheet,
+  name?: string,
+): ISheetObject => {
+  const props: Record<string, any> = {};
+
+  for (const key of uniforms) {
+    const entry = material.uniforms[key];
+    if (entry === undefined) {
+      console.warn(`[Theatre] Uniform "${key}" not found on material "${material.name}"`);
+      continue;
+    }
+
+    const v = entry.value;
+
+    if (typeof v === 'boolean') {
+      props[key] = types.boolean(v);
+    } else if (typeof v === 'number') {
+      props[key] = types.number(v, { nudgeMultiplier: Math.abs(v) * 0.05 || 0.01 });
+    } else if (v instanceof THREE.Color) {
+      props[key] = types.rgba({ r: v.r, g: v.g, b: v.b, a: 1.0 });
+    } else if (v instanceof THREE.Vector4) {
+      props[key] = types.compound({ x: types.number(v.x, { nudgeMultiplier: 0.01 }), y: types.number(v.y, { nudgeMultiplier: 0.01 }), z: types.number(v.z, { nudgeMultiplier: 0.01 }), w: types.number(v.w, { nudgeMultiplier: 0.01 }) });
+    } else if (v instanceof THREE.Vector3) {
+      props[key] = types.compound({ x: types.number(v.x, { nudgeMultiplier: 0.01 }), y: types.number(v.y, { nudgeMultiplier: 0.01 }), z: types.number(v.z, { nudgeMultiplier: 0.01 }) });
+    } else if (v instanceof THREE.Vector2) {
+      props[key] = types.compound({ x: types.number(v.x, { nudgeMultiplier: 0.01 }), y: types.number(v.y, { nudgeMultiplier: 0.01 }) });
+    } else {
+      console.warn(`[Theatre] Uniform "${key}" has unsupported type, skipping`);
+    }
+  }
+
+  const obj = sheet.object(name ?? (material.name || 'ShaderMaterial'), props);
+
+  obj.onValuesChange((values) => {
+    for (const key of Object.keys(values)) {
+      const value = (values as any)[key];
+      const uniform = material.uniforms[key];
+      if (!uniform) continue;
+
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        uniform.value = value;
+      } else if ('r' in value && 'g' in value && 'b' in value) {
+        // RGBA from Theatre → THREE.Color
+        (uniform.value as THREE.Color).setRGB(value.r, value.g, value.b);
+      } else if ('w' in value) {
+        (uniform.value as THREE.Vector4).set(value.x, value.y, value.z, value.w);
+      } else if ('z' in value) {
+        (uniform.value as THREE.Vector3).set(value.x, value.y, value.z);
+      } else if ('x' in value && 'y' in value) {
+        (uniform.value as THREE.Vector2).set(value.x, value.y);
+      }
+    }
+  });
+
+  return obj;
+};
+
+export const connectObjectVisibilityToTheatre = (object: THREE.Object3D, sheet: ISheet) => {
+  const obj = sheet.object(object.name + " Visibility", {
+    visible: types.boolean(object.visible),
+  });
+
+  obj.onValuesChange((values) => {
+    object.visible = values.visible;
+  });
+}
 
 const theatreVector3 = (vector: THREE.Vector3) => types.compound({ x: vector.x, y: vector.y, z: vector.z });
 

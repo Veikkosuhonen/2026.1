@@ -42,7 +42,7 @@ const evaluateLSystem = (system: LSystem, iterations: number): string => {
   return result;
 }
 
-export const createLSystemPlant = (position: THREE.Vector3) => {
+export const createLSystemPlant = (position: THREE.Vector3, scale = 2.0) => {
   console.time("generateLSystem");
   const instructions = evaluateLSystem(system2, 13);
   const cylinderObjects: SceneObject[] = [];
@@ -52,8 +52,8 @@ export const createLSystemPlant = (position: THREE.Vector3) => {
   const stack: { position: THREE.Vector3; rotation: THREE.Euler; thickness: number; len: number; angle: number; key: number }[] = [];
   let currentPosition = position.clone();
   let currentRotation = new THREE.Euler(0, 0, 0);
-  let currentThickness = cylinderThickness;
-  let currentLen = cylinderLength;
+  let currentThickness = cylinderThickness * scale;
+  let currentLen = cylinderLength * scale;
   let currentAngle = angle;
   let currentKey = 0.0;
 
@@ -114,14 +114,14 @@ export const createLSystemPlant = (position: THREE.Vector3) => {
       sphere.updateMatrixWorld();
       sphereObjects.push(sphere);
 
-      /*if (char === "m" && Math.random() < 0.1) {
-        const light = new THREE.PointLight(0xff88bb, 0.5);
+      if (char === "m" && Math.random() < 0.1) {
+        const light = new THREE.PointLight(0xff88bb, 1.5);
         light.scale.setScalar(4 * light.intensity);
 
         light.position.copy(currentPosition);
         light.updateMatrixWorld();
         lightsObjects.push(light);
-      }*/
+      }
     }
   }
 

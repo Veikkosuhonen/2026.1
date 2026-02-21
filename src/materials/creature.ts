@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { audioManager } from "~/audio";
+import { getSequence } from "~/sequence";
 
 const creatureShaderFS = /* glsl */ `
 precision highp float;
@@ -180,22 +181,16 @@ void main() {
   angle = rotationAngle(normalVS);
   axis = rotationAxis(normalVS);
   vec3 newNormalVS = normalize(rotate(newNormal, axis, angle));
-
   
   // Raymarch grid
   vec3 viewDir = normalize(cameraPositionWS - vPositionWS);
-  vec3 refractDir = refract(-viewDir, newNormalWS, 1.0 / 1.31);
 
   float fresnel = fresnelSchlick(dot(viewDir, newNormalWS), 0.1);
 
-  // float pulseHeight = 10.0 * (sin(u_time * 2.0) * 0.5 + 0.5);
-  float pulseDepth = mod(
-    -u_time * 5.0 + vPositionWS.x * 0.1, 
-    14.0) 
-    - 4.0;
-
   float metallic = 0.0;
-  vec3 emissive = vColor * vEmissiveIntensity;
+
+  float stripes = (1.0 + sin(40.0 * vUv.y)) / 2.0;
+  vec3 emissive = stripes * stripes * vec3(0.6, 0.7, 0.8);
 
   vec3 orm = vec3(1.0, roughness, metallic);
 
@@ -277,14 +272,14 @@ void main() {
   // Swimming animation
   vec3 offset = vec3(1.0, 0.0, 0.0); // posOS.xyz * vec3(1.0, 0.0, 0.0);
   float id = float(gl_InstanceID);
-  float t = u_time + id * 0.1;
+  float t = u_time + id * 0.5;
   float speed = 5.0 + sin(id);
-  posOS.xyz += offset * sin(t * speed + posOS.y * 2.0) * 0.3;
+  posOS.xyz += offset * sin(t * speed + posOS.y * 3.0) * 0.2;
 
   vec4 normalWS = normalize( mMatrix * vec4(normal, 0.0));
 
   vec4 posWS = mMatrix * posOS;
-  vUv = triplanar(normalWS.xyz, posWS.xyz);
+  vUv = posOS.xy;
 
   vNormalWS = normalWS.xyz;
   vPositionWS = posWS.xyz;
@@ -389,7 +384,7 @@ creatureMaterialInstanced.onBeforeRender = (renderer, scene, camera: THREE.Persp
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   creatureMaterialInstanced.uniforms.cameraPositionWS.value.copy(camera.position);
-  creatureMaterialInstanced.uniforms.u_time.value = performance.now() / 1000;
+  creatureMaterialInstanced.uniforms.u_time.value = getSequence().position;
   creatureMaterialInstanced.uniforms.near.value = camera.near;
   creatureMaterialInstanced.uniforms.far.value = camera.far;
   creatureMaterialInstanced.uniforms.loudness.value = (audioManager.getEnergy() * 20.0 - 10.0);
@@ -403,7 +398,7 @@ creatureMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCam
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   creatureMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
-  creatureMaterial.uniforms.u_time.value = performance.now() / 1000;
+  creatureMaterial.uniforms.u_time.value = getSequence().position;
   creatureMaterial.uniforms.near.value = camera.near;
   creatureMaterial.uniforms.far.value = camera.far;
 }

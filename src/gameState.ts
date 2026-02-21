@@ -24,6 +24,9 @@ export class GameState {
     this.renderer = renderer
     this.mainCamera = mainCamera
     this.sheet = sheet;
+    this.scene.userData.sequence = sheet.sequence;
+    this.lights.userData.sequence = sheet.sequence;
+    this.texts.userData.sequence = sheet.sequence;
     this.loadingManager = loadingManager
     this.uiCamera = new THREE.OrthographicCamera()
   }

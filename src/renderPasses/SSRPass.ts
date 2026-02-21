@@ -3,6 +3,7 @@ import { PassProps, RenderPass } from "./RenderPass";
 import { blur4xShader } from "../shaders";
 import { fsQuad } from "./utils";
 import { ssrResolveShader, ssrShader } from "../shaders/ssr2";
+import { getSequence } from "~/sequence";
 
 export class SSRPass extends RenderPass {
   gBuffer: THREE.WebGLRenderTarget;
@@ -50,7 +51,7 @@ export class SSRPass extends RenderPass {
     ssrShader.uniforms.resolution.value.set(this.ssrBuffer.width, this.ssrBuffer.height);
     ssrShader.uniforms.projection.value.copy(this.camera.projectionMatrix);
     ssrShader.uniforms.inverseProjection.value.copy(this.camera.projectionMatrixInverse);
-    ssrShader.uniforms.u_time.value = performance.now() / 1000;
+    ssrShader.uniforms.u_time.value = getSequence().position;
     fsQuad.material = ssrShader;
     fsQuad.render(renderer);
 

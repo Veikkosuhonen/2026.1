@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { audioManager } from "~/audio";
+import { getSequence } from "~/sequence";
 
 const solidstateShaderFS = /* glsl */ `
 precision highp float;
@@ -385,10 +386,10 @@ solidstateMaterialInstanced.onBeforeRender = (renderer, scene, camera: THREE.Per
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   solidstateMaterialInstanced.uniforms.cameraPositionWS.value.copy(camera.position);
-  solidstateMaterialInstanced.uniforms.u_time.value = performance.now() / 1000;
+  solidstateMaterialInstanced.uniforms.u_time.value = getSequence().position;
   solidstateMaterialInstanced.uniforms.near.value = camera.near;
   solidstateMaterialInstanced.uniforms.far.value = camera.far;
-  solidstateMaterialInstanced.uniforms.loudness.value = (audioManager.getEnergy() * 20.0 - 10.0);
+  solidstateMaterialInstanced.uniforms.loudness.value = (audioManager.getEnergy() * 10.0 - 10.0);
 }
 
 
@@ -399,7 +400,7 @@ solidstateMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveC
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   solidstateMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
-  solidstateMaterial.uniforms.u_time.value = performance.now() / 1000;
+  solidstateMaterial.uniforms.u_time.value = getSequence().position;
   solidstateMaterial.uniforms.near.value = camera.near;
   solidstateMaterial.uniforms.far.value = camera.far;
 }

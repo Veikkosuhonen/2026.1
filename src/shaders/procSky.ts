@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { procSky } from "./lib/procSky";
+import { getSequence } from "~/sequence";
 
 const skyShaderVS = /* glsl */ `
 in vec2 position;
@@ -97,5 +98,5 @@ skyShader.onBeforeRender = (
   scene,
   camera: THREE.PerspectiveCamera,
 ) => {
-  skyShader.uniforms.u_time.value = performance.now() / 1000.0;
+  skyShader.uniforms.u_time.value = getSequence().position;
 }

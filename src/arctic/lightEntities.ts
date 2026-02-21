@@ -1,11 +1,13 @@
+import { types } from "@theatre/core";
 import * as THREE from "three";
 import { Entity } from "~/common/entity";
 import { buildInstanced, buildInstancedLights } from "~/common/instancedHelpers";
 import { SceneObject, baseObject } from "~/common/objects";
 import { creatureMaterialInstanced } from "~/materials/creature";
 import { MATRIX } from "~/math";
+import { getSheet } from "~/sequence";
 
-const BOID_COUNT = 300;
+const BOID_COUNT = 400;
 const PERCEPTION_RADIUS = 40;
 const SEPARATION_RADIUS = 15;
 const MAX_SPEED = 3;
@@ -15,6 +17,8 @@ const SEPARATION_WEIGHT = 2.5;
 const ALIGNMENT_WEIGHT = 1.0;
 const COHESION_WEIGHT = 1.0;
 const CENTER_WEIGHT = 0.0005;
+const TARGET_HEIGHT = 5;
+const HEIGHT_WEIGHT = 0.5;
 
 export interface LightEntityController extends Entity {
   center: THREE.Vector3;
@@ -34,9 +38,9 @@ export const createLightEntities = () => {
   for (let i = 0; i < BOID_COUNT; i++) {
     const light = new THREE.PointLight(0xaabbff, 20.0);
     light.position.set(
-      (Math.random()) * 200,
+      (Math.random()) * 200+200,
       Math.random() * 10 + 1,
-      (Math.random()) * 200
+      (Math.random()) * 200+200
     );
     light.userData.velocity = new THREE.Vector3(
       (Math.random() - 0.5),
@@ -77,7 +81,7 @@ export const createLightEntities = () => {
   }
 
   const entity: LightEntityController = {
-    center: new THREE.Vector3(100, 5, 100),
+    center: new THREE.Vector3(200, 5, 200),
     FORWARD: new THREE.Vector3(0, 1, 0),
     DIR: new THREE.Vector3(0, 1, 0),
     count: BOID_COUNT,
@@ -167,6 +171,14 @@ export const createLightEntities = () => {
         _toCenter.subVectors(entity.center, pos);
         acc.addScaledVector(_toCenter, CENTER_WEIGHT);
 
+        // Steer towards target height
+        const heightError = TARGET_HEIGHT - pos.y;
+        _steer.set(0, heightError, 0);
+        _steer.normalize().multiplyScalar(MAX_SPEED);
+        _steer.sub(vel);
+        _steer.clampLength(0, MAX_FORCE);
+        acc.addScaledVector(_steer, HEIGHT_WEIGHT);
+
         // Small random jitter for organic feel
         acc.x += (Math.random() - 0.5) * 0.01;
         acc.y += (Math.random() - 0.5) * 0.01;
@@ -190,12 +202,6 @@ export const createLightEntities = () => {
         // Integrate position
         light.position.addScaledVector(vel, deltaTime);
 
-        // Ground bounce
-        if (light.position.y < -2) {
-          light.position.y = -2;
-          vel.y *= -0.5;
-        }
-
         object.position.copy(light.position);
 
         // Rotate towards velocity direction
@@ -216,6 +222,17 @@ export const createLightEntities = () => {
       }
     }
   };
+
+  getSheet().object("Light Entities", {
+    enabled: types.boolean(true),
+    centerX: types.number(200, { nudgeMultiplier: 1 }),
+    centerY: types.number(5, { nudgeMultiplier: 1 }),
+    centerZ: types.number(200, { nudgeMultiplier: 1 }),
+  }).onValuesChange((values) => {
+    entity.center.set(values.centerX, values.centerY, values.centerZ);
+    instancedLights.visible = values.enabled;
+    instancedObjects.visible = values.enabled;
+  });
 
   return {
     entity,

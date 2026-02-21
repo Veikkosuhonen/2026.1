@@ -16,12 +16,10 @@ uniform float noiseGrainIntensity;
 
 out vec4 FragColor;
 
-// Pseudo-random function
 float random(vec2 co) {
   return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-// Pseudo-random function seeded by time
 float randomTime(vec2 co) {
   return random(co + vec2(u_time, 0.0));
 }
@@ -36,8 +34,13 @@ void main() {
   float lineShift = blockNoise * (randomTime(vec2(floor(uv.y * 40.0), 0.0)) - 0.5) * lineShiftAmount * glitchIntensity;
 
   // Occasional large displacement
-  float bigGlitch = step(0.99 - glitchIntensity * 0.1, randomTime(vec2(floor(u_time * 10.0), 0.0)));
-  float bigShift = bigGlitch * (randomTime(vec2(floor(uv.y * 8.0), floor(u_time * 10.0))) - 0.5) * bigShiftAmount;
+  float bigGlitch = step(0.999 - glitchIntensity * 0.1, randomTime(vec2(floor(u_time * 10.0), 0.0)));
+  float bigShift = bigGlitch * (randomTime(vec2(floor(uv.y * 8.0), floor(u_time * 10.0))) - 0.5) * bigShiftAmount * glitchIntensity;
+
+  // Pixelate random blocks
+  float pixelSize = 4.0;
+  vec2 pixelatedUV = vec2(1.0) - floor(uv * u_resolution.xy / pixelSize) * pixelSize / u_resolution.xy;
+  uv = randomTime(vec2(floor(uv.y * 10.0) * floor(uv.x * 10.0), floor(u_time * 1.0))) < glitchIntensity * 0.01 ? pixelatedUV : uv;
 
   vec2 shiftedUV = uv + vec2(lineShift + bigShift, 0.0);
 
@@ -45,7 +48,7 @@ void main() {
   // Stronger near edges, weaker near center
   float edgeDist = length(uv - 0.5) * 2.0; // 0 at center, ~1.41 at corners
   float edgeFactor = smoothstep(0.0, 1.0, edgeDist);
-  float shift = colorShiftAmount * glitchIntensity * edgeFactor * (0.5 + 0.5 * randomTime(vec2(floor(u_time * 4.0), 0.0)));
+  float shift = colorShiftAmount * edgeFactor * (0.5 + 0.5 * randomTime(vec2(floor(u_time * 4.0), 0.0)));
   vec2 shiftDir = normalize(uv - 0.5 + 0.001); // radial direction from center
   float r = texture(src, shiftedUV + shiftDir * shift).r;
   float g = texture(src, shiftedUV).g;

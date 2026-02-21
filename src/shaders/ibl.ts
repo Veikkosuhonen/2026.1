@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { screenVS } from "./screenVS";
 import { pmrem } from "./lib/pmrem";
 import { procSky } from "./lib/procSky";
+import { getSequence } from "~/sequence";
 
 const iblShaderFS = /* glsl */ `
 precision highp float;
@@ -151,5 +152,5 @@ iblShader.onBeforeRender = (
   scene,
   camera: THREE.PerspectiveCamera,
 ) => {
-  iblShader.uniforms.u_time.value = performance.now() / 1000.0;
+  iblShader.uniforms.u_time.value = getSequence().position;
 }

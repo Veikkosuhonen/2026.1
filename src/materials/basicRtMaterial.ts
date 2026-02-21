@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getSequence } from '~/sequence';
 
 const rtShaderFS = /* glsl */ `
 precision highp float;
@@ -186,7 +187,7 @@ basicRtMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCame
     basicRtMaterial.uniforms.previousViewMatrix.value.copy(camera.userData.previousViewMatrix);
     basicRtMaterial.uniforms.previousWorldMatrix.value.copy(object.userData.previousWorldMatrix);
     basicRtMaterial.uniforms.cameraPositionOS.value.copy(object.worldToLocal(camera.position.clone()));
-    basicRtMaterial.uniforms.u_time.value = performance.now() / 1000;
+    basicRtMaterial.uniforms.u_time.value = getSequence().position;
     basicRtMaterial.uniforms.near.value = camera.near;
     basicRtMaterial.uniforms.far.value = camera.far;
 }

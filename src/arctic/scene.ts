@@ -17,8 +17,8 @@ type GeneratorResult = {
 };
 
 export const grid = {
-  width: 800,
-  height: 800,
+  width: 1300,
+  height: 1300,
 
   generate(): GeneratorResult {
     console.time("generate");
@@ -38,7 +38,7 @@ export const grid = {
     entities.push(entity);
 
     // L-System Plants
-    const { group: lSystemGroup, lights: lSystemLights } = createLSystemPlant(new THREE.Vector3(100, -4, 100));
+    const { group: lSystemGroup, lights: lSystemLights } = createLSystemPlant(new THREE.Vector3(600, -7, 600));
     group.add(lSystemGroup);
     lights.add(lSystemLights);
 

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { getSequence } from "~/sequence";
 
 const datalakeShaderFS = /* glsl */ `
 precision highp float;
@@ -26,6 +27,7 @@ uniform mat4 textViewMatrix;
 uniform vec3 cameraPositionWS;
 uniform float near;
 uniform float far;
+uniform float u_glow;
 
 // Using stefan gustavsons cellular noise:
 
@@ -195,23 +197,25 @@ void main() {
 
   float glow = 0.0;
   float depth = 0.0;
+  if (u_glow > 0.01) {
+    for (int i = 0; i < 200; i++) {
+      vec3 offset = 0.5 * vPositionOffset * (1.0 - depth / 10.0); // Reduce wave influence with depth
+      vec3 samplePos = vPositionWS - offset + refractDir * float(i) * 0.05;
+      // 3d grid pattern
+      vec3 grid = fract(samplePos/2.0 + 0.5) - 0.5;
+      vec3 dist = abs(grid);
+      const float thickness = 0.03;
+      const float smoothing = 0.01;
+      vec3 mask = smoothstep(0.5 - thickness - smoothing, 0.5 - thickness, dist);
+      float isGrid = clamp(mask.x * mask.y + mask.y * mask.z + mask.z * mask.x, 0.0, 1.0);
 
-  for (int i = 0; i < 200; i++) {
-    vec3 offset = 0.5 * vPositionOffset * (1.0 - depth / 10.0); // Reduce wave influence with depth
-    vec3 samplePos = vPositionWS - offset + refractDir * float(i) * 0.05;
-    // 3d grid pattern
-    vec3 grid = fract(samplePos/2.0 + 0.5) - 0.5;
-    vec3 dist = abs(grid);
-    const float thickness = 0.03;
-    const float smoothing = 0.01;
-    vec3 mask = smoothstep(0.5 - thickness - smoothing, 0.5 - thickness, dist);
-    float isGrid = clamp(mask.x * mask.y + mask.y * mask.z + mask.z * mask.x, 0.0, 1.0);
+      depth = length(samplePos - vPositionWS);
 
-    depth = length(samplePos - vPositionWS);
+      isGrid *= max(0.0, smoothstep(4.0, 0.0, abs(depth - pulseDepth))); // Add pulse effect
 
-    // isGrid *= max(0.0, smoothstep(4.0, 0.0, abs(depth - pulseDepth))); // Add pulse effect
-
-    glow += isGrid * exp(-depth * 0.5);
+      glow += isGrid * exp(-depth * 0.5);
+    }
+    glow *= u_glow;
   }
   glow = clamp(glow, 0.0, 6.0);
   glow *= max(1.0 - fresnel * 2.0, 0.0);
@@ -219,13 +223,13 @@ void main() {
 
   float metallic = 0.0;
   vec3 emissive = palette(
-    vUv.y + u_time * 0.05,
+    vUv.x / 100.0 + u_time * 0.05,
     vec3(0.5, 0.5, 0.5),
     vec3(0.5, 0.5, 0.5),
     vec3(1.0, 1.0, 1.0),
     vec3(0.00, 0.33, 0.67)
   );
-  float emissiveIntensity = 0.0;//  glow;
+  float emissiveIntensity = glow;
 
   vec3 orm = vec3(1.0, roughness, metallic);
 
@@ -416,6 +420,7 @@ export const datalakeMaterialInstanced = new THREE.ShaderMaterial({
     cameraPositionWS: { value: new THREE.Vector3() },
     near: { value: 0.1 },
     far: { value: 1000 },
+    u_glow: { value: 1.0 },
   },
   defines: {
     USE_INSTANCING: "",
@@ -451,6 +456,7 @@ export const datalakeMaterial = new THREE.ShaderMaterial({
     cameraPositionWS: { value: new THREE.Vector3() },
     near: { value: 0.1 },
     far: { value: 1000 },
+    u_glow: { value: 1.0 },
   },
   defines: {
     // USE_INSTANCING: "",
@@ -480,7 +486,7 @@ datalakeMaterialInstanced.onBeforeRender = (renderer, scene, camera: THREE.Persp
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   datalakeMaterialInstanced.uniforms.cameraPositionWS.value.copy(camera.position);
-  datalakeMaterialInstanced.uniforms.u_time.value = performance.now() / 1000;
+  datalakeMaterialInstanced.uniforms.u_time.value = getSequence().position;
   datalakeMaterialInstanced.uniforms.near.value = camera.near;
   datalakeMaterialInstanced.uniforms.far.value = camera.far;
 }
@@ -493,7 +499,7 @@ datalakeMaterial.onBeforeRender = (renderer, scene, camera: THREE.PerspectiveCam
   // const beat = Math.floor(2 * t * bps);
   // iceMaterial.uniforms.u_time.value = beat;
   datalakeMaterial.uniforms.cameraPositionWS.value.copy(camera.position);
-  datalakeMaterial.uniforms.u_time.value = performance.now() / 1000;
+  datalakeMaterial.uniforms.u_time.value = getSequence().position;
   datalakeMaterial.uniforms.near.value = camera.near;
   datalakeMaterial.uniforms.far.value = camera.far;
 }
